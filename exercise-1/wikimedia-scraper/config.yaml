@@ -1,0 +1,22 @@
+# Wikimedia Commons Image Scraper Configuration
+
+# Required: Search keyword for images
+keyword: "butterfly"
+
+# Optional: Pagination offset (default: 0)
+# Use this to skip results and paginate through large result sets
+offset: 0
+
+# Optional: Batch size (fixed at 5 per specification)
+batch_size: 5
+
+# Optional: Output file path (default: print to stdout)
+# Leave empty or omit to print results to console
+# Set to a file path to save results to that file
+output_file: null
+
+# Optional: Maximum number of retry attempts for failed API requests (default: 3)
+max_retries: 3
+
+# Optional: Request timeout in seconds (default: 10)
+request_timeout: 10

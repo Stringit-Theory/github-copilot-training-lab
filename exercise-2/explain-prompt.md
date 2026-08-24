@@ -1,0 +1,1 @@
+Please explain line by line how it works. Consider me as a powershell novice and save it in an md file

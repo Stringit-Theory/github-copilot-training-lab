@@ -1,0 +1,1 @@
+ /plan create a python script that scraps images from wikimedia commons for a particular keyword. Add a pagination offset and a maximum batch size of 5 images per page
