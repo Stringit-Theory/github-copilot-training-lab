@@ -12,6 +12,7 @@ A Python script to fetch image metadata from Wikimedia Commons for a given keywo
 - **Pretty-printed output**: Human-readable text formatting with detailed metadata
 - **Error handling**: Graceful error messages and logging
 - **Flexible output**: Print to console or save to file
+- **Attribution sidecars**: Save metadata files for the three most recent results
 
 ## Installation
 
@@ -53,6 +54,9 @@ batch_size: 5
 # Optional: Output file path (default: stdout)
 output_file: null
 
+# Optional: Directory for attribution metadata files (default: metadata)
+metadata_output_dir: "metadata"
+
 # Optional: Maximum retry attempts (default: 3)
 max_retries: 3
 
@@ -68,6 +72,7 @@ request_timeout: 10
 | `offset` | integer | 0 | Number of results to skip (for pagination) |
 | `batch_size` | integer | 5 | Results per page (fixed at 5) |
 | `output_file` | string/null | null | File path for output (null = stdout) |
+| `metadata_output_dir` | string | metadata | Directory for recent image attribution files |
 | `max_retries` | integer | 3 | API retry attempts on failure |
 | `request_timeout` | integer | 10 | Seconds to wait for API response |
 
@@ -139,6 +144,18 @@ python wikimedia_scraper.py config.yaml
 ```
 
 The results will be saved to `results.txt`.
+
+The scraper also writes up to three attribution metadata sidecar files to the
+`metadata_output_dir` directory. Files are selected by upload timestamp and
+named after the image stem; for example, `File:Butterfly.jpg` becomes
+`Butterfly.txt`. Each file begins with:
+
+```
+Attribution metadata for File:Butterfly.jpg
+```
+
+This saves metadata for scraped image results and does not download image
+binaries.
 
 ## Output Format
 

@@ -11,6 +11,7 @@ class ConfigValidator:
         'offset': 0,
         'batch_size': 5,
         'output_file': None,
+        'metadata_output_dir': 'metadata',
         'max_retries': 3,
         'request_timeout': 10
     }
@@ -74,3 +75,7 @@ class ConfigValidator:
 
         if config['output_file'] is not None and not isinstance(config['output_file'], str):
             raise ValueError("'output_file' must be a string or null")
+
+        if (not isinstance(config['metadata_output_dir'], str)
+                or not config['metadata_output_dir'].strip()):
+            raise ValueError("'metadata_output_dir' must be a non-empty string")

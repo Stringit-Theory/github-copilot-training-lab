@@ -8,9 +8,9 @@ This means the repo does not currently define a language, framework, runtime, or
 
 ## High-level project facts
 
-- Repo size: extremely small / empty repository
+- Repo size: extremely small repository
 - Project type: training / lab repo, not an application codebase yet
-- Languages/frameworks/runtime: none detected at present
+- Languages/frameworks/runtime: python, shell, ruby, typescript
 - Build system: none configured
 - Tests: none configured
 - CI/CD: none configured

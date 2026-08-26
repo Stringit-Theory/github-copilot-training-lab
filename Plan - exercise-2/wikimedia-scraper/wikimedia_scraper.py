@@ -10,10 +10,12 @@ Usage:
 """
 
 import argparse
+import json
 import sys
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from config_validator import ConfigValidator
 from wikimedia_api_client import WikimediaAPIClient
@@ -54,6 +56,7 @@ class WikimediaScraper:
         offset = self.config['offset']
         batch_size = self.config['batch_size']
         output_file = self.config['output_file']
+        metadata_output_dir = self.config['metadata_output_dir']
 
         logger.info(f"Starting search for keyword: '{keyword}'")
         logger.info(f"Offset: {offset}, Batch size: {batch_size}")
@@ -63,6 +66,8 @@ class WikimediaScraper:
 
             if not images:
                 logger.warning(f"No images found for keyword: '{keyword}'")
+
+            self._save_recent_metadata(images, metadata_output_dir)
 
             # Format results
             formatted_output = OutputFormatter.format_results(
@@ -147,7 +152,8 @@ class WikimediaScraper:
                         "url": img_info.get("url", ""),
                         "uploader": img_info.get("user", "Unknown"),
                         "timestamp": img_info.get("timestamp", ""),
-                        "description": self._extract_description(img_info)
+                        "description": self._extract_description(img_info),
+                        "extmetadata": img_info.get("extmetadata", {})
                     }
                     images.append(image_data)
 
@@ -158,6 +164,96 @@ class WikimediaScraper:
             logger.warning("No search results in API response")
 
         return images[:limit]
+
+    @staticmethod
+    def _parse_timestamp(timestamp: str) -> Optional[datetime]:
+        """Parse an API timestamp as a timezone-aware UTC datetime."""
+        if not timestamp:
+            return None
+
+        try:
+            parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        except (ValueError, AttributeError):
+            return None
+
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+
+    @classmethod
+    def _select_recent_images(
+        cls,
+        images: List[Dict[str, Any]],
+        limit: int = 3
+    ) -> List[Dict[str, Any]]:
+        """Return the newest images, with undated results as a fallback."""
+        epoch = datetime.min.replace(tzinfo=timezone.utc)
+        ranked_images = sorted(
+            enumerate(images),
+            key=lambda item: (
+                cls._parse_timestamp(item[1].get("timestamp", "")) is not None,
+                cls._parse_timestamp(item[1].get("timestamp", "")) or epoch,
+                -item[0]
+            ),
+            reverse=True
+        )
+        return [image for _, image in ranked_images[:limit]]
+
+    @staticmethod
+    def _metadata_filename(title: str) -> str:
+        """Create a safe sidecar filename from a Wikimedia file title."""
+        image_name = title[5:] if title.startswith("File:") else title
+        image_name = image_name.replace("\\", "/")
+        image_name = Path(image_name).name
+        stem = Path(image_name).stem or "image"
+        return f"{stem}.txt"
+
+    @staticmethod
+    def _metadata_value(value: Any) -> str:
+        """Serialize metadata values in a stable readable form."""
+        if isinstance(value, dict):
+            return json.dumps(value, ensure_ascii=False, sort_keys=True)
+        if isinstance(value, (list, tuple)):
+            return json.dumps(value, ensure_ascii=False)
+        return str(value)
+
+    @classmethod
+    def _format_attribution_metadata(cls, image: Dict[str, Any]) -> str:
+        """Format one image's attribution metadata as text."""
+        title = image.get("title", "Unknown")
+        lines = [f"Attribution metadata for {title}"]
+
+        for field in ("url", "uploader", "timestamp", "description"):
+            value = image.get(field, "")
+            if value:
+                lines.append(f"{field}: {value}")
+
+        extmetadata = image.get("extmetadata", {})
+        if isinstance(extmetadata, dict):
+            for key in sorted(extmetadata):
+                lines.append(f"{key}: {cls._metadata_value(extmetadata[key])}")
+
+        return "\n".join(lines) + "\n"
+
+    @classmethod
+    def _save_recent_metadata(
+        cls,
+        images: List[Dict[str, Any]],
+        output_dir: str
+    ) -> None:
+        """Write sidecar attribution files for up to three recent images."""
+        recent_images = cls._select_recent_images(images)
+        if not recent_images:
+            return
+
+        metadata_dir = Path(output_dir)
+        metadata_dir.mkdir(parents=True, exist_ok=True)
+        for image in recent_images:
+            filename = cls._metadata_filename(image.get("title", "image"))
+            OutputFormatter.write_to_file(
+                cls._format_attribution_metadata(image),
+                str(metadata_dir / filename)
+            )
 
     @staticmethod
     def _extract_description(img_info: Dict[str, Any]) -> str:
