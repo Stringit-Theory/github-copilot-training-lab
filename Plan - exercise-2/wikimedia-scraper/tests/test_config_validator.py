@@ -58,6 +58,15 @@ class TestConfigValidator(unittest.TestCase):
         finally:
             os.remove(path)
 
+    def test_batch_size_must_be_five(self):
+        data = {'keyword': 'x', 'batch_size': 6}
+        path = self._write_config(data)
+        try:
+            with self.assertRaises(ValueError):
+                ConfigValidator.load_config(path)
+        finally:
+            os.remove(path)
+
     def test_output_file_type_invalid(self):
         data = {'keyword': 'x', 'batch_size': 5, 'output_file': 123}
         path = self._write_config(data)

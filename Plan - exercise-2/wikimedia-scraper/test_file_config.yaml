@@ -2,3 +2,4 @@ keyword: "nature"
 offset: 0
 batch_size: 5
 output_file: results.txt
+metadata_output_dir: metadata

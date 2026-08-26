@@ -112,7 +112,7 @@ class OutputFormatter:
             content: Formatted content string
             filepath: Path to output file
         """
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
 
     @staticmethod
